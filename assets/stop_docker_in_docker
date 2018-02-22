@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Adapted from https://github.com/concourse/docker-image-resource/blob/274ca12649776c2515b015ea04871b5bef3241b5/assets/common.sh
+
+set -eu
+
+: "${PIDFILE:=/tmp/docker.pid}"
+
+local pid=$(cat "${PIDFILE}")
+if [ -z "$pid" ]; then
+  return 0
+fi
+
+kill -TERM $pid
