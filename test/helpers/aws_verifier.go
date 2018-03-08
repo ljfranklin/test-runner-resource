@@ -15,10 +15,9 @@ import (
 
 type AWSVerifier struct {
 	s3 *awss3.S3
-	t  *testing.T
 }
 
-func NewAWSVerifier(t *testing.T, accessKey string, secretKey string, region string, endpoint string) *AWSVerifier {
+func NewAWSVerifier(accessKey string, secretKey string, region string, endpoint string) *AWSVerifier {
 	if len(region) == 0 {
 		region = " " // aws sdk complains if region is empty
 	}
@@ -39,13 +38,12 @@ func NewAWSVerifier(t *testing.T, accessKey string, secretKey string, region str
 	}
 
 	return &AWSVerifier{
-		t:  t,
 		s3: s3,
 	}
 }
 
-func (a AWSVerifier) ExpectS3ObjectToExist(bucketName string, key string) {
-	a.t.Helper()
+func (a AWSVerifier) ExpectS3ObjectToExist(t *testing.T, bucketName string, key string) {
+	t.Helper()
 
 	params := &awss3.HeadObjectInput{
 		Bucket: aws.String(bucketName),
@@ -54,15 +52,15 @@ func (a AWSVerifier) ExpectS3ObjectToExist(bucketName string, key string) {
 
 	_, err := a.s3.HeadObject(params)
 	if err != nil {
-		a.t.Fatalf(
+		t.Fatalf(
 			"Expected S3 file '%s' to exist in bucket '%s', but it does not",
 			key,
 			bucketName)
 	}
 }
 
-func (a AWSVerifier) ExpectS3ObjectToNotExist(bucketName string, key string) {
-	a.t.Helper()
+func (a AWSVerifier) ExpectS3ObjectToNotExist(t *testing.T, bucketName string, key string) {
+	t.Helper()
 
 	params := &awss3.HeadObjectInput{
 		Bucket: aws.String(bucketName),
@@ -70,8 +68,8 @@ func (a AWSVerifier) ExpectS3ObjectToNotExist(bucketName string, key string) {
 	}
 
 	_, err := a.s3.HeadObject(params)
-	if err != nil {
-		a.t.Fatalf(
+	if err == nil {
+		t.Fatalf(
 			"Expected S3 file '%s' to not exist in bucket '%s', but it does",
 			key,
 			bucketName)
@@ -79,15 +77,15 @@ func (a AWSVerifier) ExpectS3ObjectToNotExist(bucketName string, key string) {
 
 	reqErr, ok := err.(awserr.RequestFailure)
 	if !ok {
-		a.t.Fatalf("Invalid AWS error type: %s", err)
+		t.Fatalf("Invalid AWS error type: %s", err)
 	}
 	if reqErr.StatusCode() != 404 {
-		a.t.Fatalf("Expected req to return 404 but was %s", reqErr.StatusCode())
+		t.Fatalf("Expected req to return 404 but was %s", reqErr.StatusCode())
 	}
 }
 
-func (a AWSVerifier) UploadObjectToS3(bucketName string, key string, content io.Reader) {
-	a.t.Helper()
+func (a AWSVerifier) UploadObjectToS3(t *testing.T, bucketName string, key string, content io.Reader) {
+	t.Helper()
 
 	uploader := s3manager.NewUploaderWithClient(a.s3)
 	_, err := uploader.Upload(&s3manager.UploadInput{
@@ -96,12 +94,12 @@ func (a AWSVerifier) UploadObjectToS3(bucketName string, key string, content io.
 		Body:   content,
 	})
 	if err != nil {
-		a.t.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
-func (a AWSVerifier) DeleteObjectFromS3(bucketName string, key string) {
-	a.t.Helper()
+func (a AWSVerifier) DeleteObjectFromS3(t *testing.T, bucketName string, key string) {
+	t.Helper()
 
 	deleteInput := &awss3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
@@ -109,6 +107,25 @@ func (a AWSVerifier) DeleteObjectFromS3(bucketName string, key string) {
 	}
 	_, err := a.s3.DeleteObject(deleteInput)
 	if err != nil {
-		a.t.Fatal(err)
+		t.Fatal(err)
 	}
+}
+
+func (a AWSVerifier) GetS3ObjectLastModified(t *testing.T, bucketName string, key string, timeFormat string) string {
+	t.Helper()
+
+	params := &awss3.HeadObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	}
+
+	resp, err := a.s3.HeadObject(params)
+	if err != nil {
+		t.Fatalf(
+			"Expected S3 file '%s' to exist in bucket '%s', but it does not",
+			key,
+			bucketName)
+	}
+
+	return resp.LastModified.Format(timeFormat)
 }
