@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,6 +19,8 @@ type s3 struct {
 	accessKeyID     string
 	secretAccessKey string
 	regionName      string
+	endpoint        string
+	useV4Signing    bool
 	client          *awss3.S3
 	uploader        *s3manager.Uploader
 }
@@ -68,6 +71,12 @@ func NewS3(config map[string]interface{}) Storage {
 		secretAccessKey: config["secret_access_key"].(string),
 		regionName:      config["region_name"].(string),
 	}
+	if endpoint, ok := config["endpoint"]; ok {
+		s3.endpoint = endpoint.(string)
+	}
+	if useV4Signing, ok := config["use_v4_signing"]; ok {
+		s3.useV4Signing = useV4Signing.(bool)
+	}
 
 	creds := credentials.NewStaticCredentials(s3.accessKeyID, s3.secretAccessKey, "")
 
@@ -83,16 +92,20 @@ func NewS3(config map[string]interface{}) Storage {
 		MaxRetries:       aws.Int(maxRetries),
 		Logger:           nil,
 	}
-	// if len(m.Endpoint) > 0 {
-	// 	awsConfig.Endpoint = aws.String(m.Endpoint)
-	// }
+	if len(s3.endpoint) > 0 {
+		awsConfig.Endpoint = aws.String(s3.endpoint)
+	}
 
 	session := awsSession.New(awsConfig)
 	s3.client = awss3.New(session, awsConfig)
-	// if m.ShouldUseSigningV2() {
-	// 	Setv2Handlers(client)
-	// }
+	if len(s3.endpoint) > 0 && !s3.useV4Signing {
+		Setv2Handlers(s3.client)
+	}
 	s3.uploader = s3manager.NewUploaderWithClient(s3.client)
+	if s3.isGCSHost() {
+		// GCS returns `InvalidArgument` on multipart uploads
+		s3.uploader.MaxUploadParts = 1
+	}
 
 	return s3
 }
@@ -123,7 +136,6 @@ func (s *s3) Get(key string, destination io.Writer) (Result, error) {
 }
 
 func (s *s3) Put(key string, source io.Reader) (Result, error) {
-	// TODO: switch multipart upload size on non-AWS endpoints
 	params := &s3manager.UploadInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -167,14 +179,14 @@ func (s *s3) Delete(key string) error {
 }
 
 func (s *s3) List(prefix string) (Results, error) {
-	params := &awss3.ListObjectsV2Input{
+	params := &awss3.ListObjectsInput{
 		Bucket: aws.String(s.bucket),
 		Prefix: aws.String(prefix),
 	}
 
 	objects := []*awss3.Object{}
-	err := s.client.ListObjectsV2Pages(params,
-		func(page *awss3.ListObjectsV2Output, lastPage bool) bool {
+	err := s.client.ListObjectsPages(params,
+		func(page *awss3.ListObjectsOutput, lastPage bool) bool {
 			objects = append(objects, page.Contents...)
 			return true
 		})
@@ -195,4 +207,8 @@ func (s *s3) List(prefix string) (Results, error) {
 	sort.Sort(results)
 
 	return results, nil
+}
+
+func (s *s3) isGCSHost() bool {
+	return (s.endpoint != "" && strings.Contains(s.endpoint, "storage.googleapis.com"))
 }

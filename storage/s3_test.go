@@ -27,6 +27,7 @@ type testConfig struct {
 	AccessKeyID     string
 	SecretAccessKey string
 	Region          string
+	Endpoint        string
 }
 
 func buildTestConfig(t *testing.T) testConfig {
@@ -62,12 +63,57 @@ func buildTestConfig(t *testing.T) testConfig {
 	}
 }
 
-func TestGet(t *testing.T) {
+func buildS3CompatibleTestConfig(t *testing.T) testConfig {
+	t.Helper()
+
+	accessKey := os.Getenv("S3_COMPATIBLE_ACCESS_KEY")
+	if accessKey == "" {
+		t.Fatalf("S3_COMPATIBLE_ACCESS_KEY must be set")
+	}
+	secretKey := os.Getenv("S3_COMPATIBLE_SECRET_KEY")
+	if secretKey == "" {
+		t.Fatalf("S3_COMPATIBLE_SECRET_KEY must be set")
+	}
+	bucket := os.Getenv("S3_COMPATIBLE_BUCKET")
+	if bucket == "" {
+		t.Fatalf("S3_COMPATIBLE_BUCKET must be set")
+	}
+	bucketPath := os.Getenv("S3_COMPATIBLE_BUCKET_SUBFOLDER")
+	if bucketPath == "" {
+		t.Fatalf("S3_COMPATIBLE_BUCKET_SUBFOLDER must be set")
+	}
+	endpoint := os.Getenv("S3_COMPATIBLE_ENDPOINT")
+	if bucketPath == "" {
+		t.Fatalf("S3_COMPATIBLE_ENDPOINT must be set")
+	}
+
+	return testConfig{
+		Bucket:          bucket,
+		BucketPath:      bucketPath,
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
+		Endpoint:        endpoint,
+	}
+}
+
+func TestS3Get(t *testing.T) {
 	t.Parallel()
 
 	c := buildTestConfig(t)
 
-	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, "")
+	testGet(t, c)
+}
+
+func TestS3CompatibleGet(t *testing.T) {
+	t.Parallel()
+
+	c := buildS3CompatibleTestConfig(t)
+
+	testGet(t, c)
+}
+
+func testGet(t *testing.T, c testConfig) {
+	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, c.Endpoint)
 
 	fixture, err := os.Open(fixturePath("some-file"))
 	if err != nil {
@@ -78,17 +124,12 @@ func TestGet(t *testing.T) {
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
 	defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, s3RemotePath)
 
-	s3, err := storage.CreateFromJSON("s3", map[string]interface{}{
-		"access_key_id":     c.AccessKeyID,
-		"secret_access_key": c.SecretAccessKey,
-		"region_name":       c.Region,
-		"bucket":            c.Bucket,
-	})
+	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("Parallel", func(t *testing.T) {
+	t.Run("Get", func(t *testing.T) {
 		t.Run("downloads the file", func(t *testing.T) {
 			t.Parallel()
 
@@ -131,12 +172,24 @@ func TestGet(t *testing.T) {
 	})
 }
 
-func TestDelete(t *testing.T) {
+func TestS3Delete(t *testing.T) {
 	t.Parallel()
 
 	c := buildTestConfig(t)
 
-	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, "")
+	testDelete(t, c)
+}
+
+func TestS3CompatibleDelete(t *testing.T) {
+	t.Parallel()
+
+	c := buildS3CompatibleTestConfig(t)
+
+	testDelete(t, c)
+}
+
+func testDelete(t *testing.T, c testConfig) {
+	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, c.Endpoint)
 
 	fixture, err := os.Open(fixturePath("some-file"))
 	if err != nil {
@@ -146,19 +199,13 @@ func TestDelete(t *testing.T) {
 
 	s3RemotePath := filepath.Join(c.BucketPath, helpers.RandomString("s3-get-test"))
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
-	defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, s3RemotePath)
 
-	s3, err := storage.CreateFromJSON("s3", map[string]interface{}{
-		"access_key_id":     c.AccessKeyID,
-		"secret_access_key": c.SecretAccessKey,
-		"region_name":       c.Region,
-		"bucket":            c.Bucket,
-	})
+	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("Parallel", func(t *testing.T) {
+	t.Run("Delete", func(t *testing.T) {
 		t.Run("deletes the file", func(t *testing.T) {
 			t.Parallel()
 
@@ -174,24 +221,31 @@ func TestDelete(t *testing.T) {
 	})
 }
 
-func TestPut(t *testing.T) {
+func TestS3Put(t *testing.T) {
 	t.Parallel()
 
 	c := buildTestConfig(t)
 
-	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, "")
+	testPut(t, c)
+}
 
-	s3, err := storage.CreateFromJSON("s3", map[string]interface{}{
-		"access_key_id":     c.AccessKeyID,
-		"secret_access_key": c.SecretAccessKey,
-		"region_name":       c.Region,
-		"bucket":            c.Bucket,
-	})
+func TestS3CompatiblePut(t *testing.T) {
+	t.Parallel()
+
+	c := buildS3CompatibleTestConfig(t)
+
+	testPut(t, c)
+}
+
+func testPut(t *testing.T, c testConfig) {
+	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, c.Endpoint)
+
+	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("Parallel", func(t *testing.T) {
+	t.Run("Delete", func(t *testing.T) {
 		t.Run("uploads the file", func(t *testing.T) {
 			t.Parallel()
 
@@ -235,12 +289,24 @@ func TestPut(t *testing.T) {
 	})
 }
 
-func TestList(t *testing.T) {
+func TestS3List(t *testing.T) {
 	t.Parallel()
 
 	c := buildTestConfig(t)
 
-	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, "")
+	testList(t, c)
+}
+
+func TestS3CompatibleList(t *testing.T) {
+	t.Parallel()
+
+	c := buildS3CompatibleTestConfig(t)
+
+	testList(t, c)
+}
+
+func testList(t *testing.T, c testConfig) {
+	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, c.Endpoint)
 
 	nestedBucketPath := filepath.Join(c.BucketPath, helpers.RandomString("s3-list"))
 	uploadedFixtures := []string{
@@ -262,17 +328,12 @@ func TestList(t *testing.T) {
 		time.Sleep(2 * time.Second) // give time for LastModified to change
 	}
 
-	s3, err := storage.CreateFromJSON("s3", map[string]interface{}{
-		"access_key_id":     c.AccessKeyID,
-		"secret_access_key": c.SecretAccessKey,
-		"region_name":       c.Region,
-		"bucket":            c.Bucket,
-	})
+	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Run("Parallel", func(t *testing.T) {
+	t.Run("List", func(t *testing.T) {
 		t.Run("returns all files with increasing versions", func(t *testing.T) {
 			t.Parallel()
 
@@ -313,6 +374,22 @@ last_modified: "%s"
 			}
 		})
 	})
+}
+
+func buildS3Config(c testConfig) map[string]interface{} {
+	s3Config := map[string]interface{}{
+		"access_key_id":     c.AccessKeyID,
+		"secret_access_key": c.SecretAccessKey,
+		"region_name":       c.Region,
+		"bucket":            c.Bucket,
+	}
+	if len(c.Region) > 0 {
+		s3Config["region_name"] = c.Region
+	}
+	if len(c.Endpoint) > 0 {
+		s3Config["endpoint"] = c.Endpoint
+	}
+	return s3Config
 }
 
 func fixturePath(fixtureName string) string {
