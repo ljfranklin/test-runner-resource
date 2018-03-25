@@ -19,7 +19,7 @@ type Storage interface {
 	Get(string, io.Writer) error
 	Put(string, io.Reader) error
 	Delete(string) error
-	List(string) ([]string, error)
+	List() ([]string, error)
 }
 
 func CreateFromJSON(configType string, config map[string]interface{}) (Storage, error) {

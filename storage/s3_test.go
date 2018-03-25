@@ -295,9 +295,9 @@ func testList(t *testing.T, c testConfig) {
 
 	nestedBucketPath := filepath.Join(c.BucketPath, helpers.RandomString("s3-list"))
 	uploadedFixtures := []string{
-		filepath.Join(nestedBucketPath, helpers.RandomString("s3-list-test")),
-		filepath.Join(nestedBucketPath, helpers.RandomString("s3-list-test")),
-		filepath.Join(nestedBucketPath, helpers.RandomString("s3-list-test")),
+		helpers.RandomString("s3-list-test"),
+		helpers.RandomString("s3-list-test"),
+		helpers.RandomString("s3-list-test"),
 	}
 
 	for _, remotePath := range uploadedFixtures {
@@ -307,22 +307,23 @@ func testList(t *testing.T, c testConfig) {
 		}
 		defer fixture.Close()
 
-		awsVerifier.UploadObjectToS3(t, c.Bucket, remotePath, fixture)
-		defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, remotePath)
-
-		time.Sleep(2 * time.Second) // give time for LastModified to change
-	}
-
-	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
-	if err != nil {
-		t.Fatal(err)
+		awsVerifier.UploadObjectToS3(t, c.Bucket, filepath.Join(nestedBucketPath, remotePath), fixture)
+		defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, filepath.Join(nestedBucketPath, remotePath))
 	}
 
 	t.Run("List", func(t *testing.T) {
 		t.Run("returns all files in bucket path", func(t *testing.T) {
 			t.Parallel()
 
-			results, err := s3.List(nestedBucketPath)
+			config := buildS3Config(c)
+			config["path_prefix"] = nestedBucketPath
+
+			s3, err := storage.CreateFromJSON("s3", config)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			results, err := s3.List()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -344,7 +345,15 @@ func testList(t *testing.T, c testConfig) {
 		t.Run("returns empty list if prefix is empty", func(t *testing.T) {
 			t.Parallel()
 
-			results, err := s3.List("path-that-does-not-exist")
+			config := buildS3Config(c)
+			config["path_prefix"] = "path-that-does-not-exist"
+
+			s3, err := storage.CreateFromJSON("s3", config)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			results, err := s3.List()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -362,6 +371,7 @@ func buildS3Config(c testConfig) map[string]interface{} {
 		"secret_access_key": c.SecretAccessKey,
 		"region_name":       c.Region,
 		"bucket":            c.Bucket,
+		"path_prefix":       c.BucketPath,
 	}
 	if len(c.Region) > 0 {
 		s3Config["region_name"] = c.Region

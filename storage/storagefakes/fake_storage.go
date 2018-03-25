@@ -44,12 +44,10 @@ type FakeStorage struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	ListStub        func(string) ([]string, error)
+	ListStub        func() ([]string, error)
 	listMutex       sync.RWMutex
-	listArgsForCall []struct {
-		arg1 string
-	}
-	listReturns struct {
+	listArgsForCall []struct{}
+	listReturns     struct {
 		result1 []string
 		result2 error
 	}
@@ -207,16 +205,14 @@ func (fake *FakeStorage) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeStorage) List(arg1 string) ([]string, error) {
+func (fake *FakeStorage) List() ([]string, error) {
 	fake.listMutex.Lock()
 	ret, specificReturn := fake.listReturnsOnCall[len(fake.listArgsForCall)]
-	fake.listArgsForCall = append(fake.listArgsForCall, struct {
-		arg1 string
-	}{arg1})
-	fake.recordInvocation("List", []interface{}{arg1})
+	fake.listArgsForCall = append(fake.listArgsForCall, struct{}{})
+	fake.recordInvocation("List", []interface{}{})
 	fake.listMutex.Unlock()
 	if fake.ListStub != nil {
-		return fake.ListStub(arg1)
+		return fake.ListStub()
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -228,12 +224,6 @@ func (fake *FakeStorage) ListCallCount() int {
 	fake.listMutex.RLock()
 	defer fake.listMutex.RUnlock()
 	return len(fake.listArgsForCall)
-}
-
-func (fake *FakeStorage) ListArgsForCall(i int) string {
-	fake.listMutex.RLock()
-	defer fake.listMutex.RUnlock()
-	return fake.listArgsForCall[i].arg1
 }
 
 func (fake *FakeStorage) ListReturns(result1 []string, result2 error) {

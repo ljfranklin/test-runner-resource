@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
+	"path"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,6 +19,7 @@ type s3 struct {
 	secretAccessKey string
 	regionName      string
 	endpoint        string
+	prefix          string
 	useV4Signing    bool
 	client          *awss3.S3
 	uploader        *s3manager.Uploader
@@ -34,6 +36,7 @@ func NewS3(config map[string]interface{}) Storage {
 		accessKeyID:     config["access_key_id"].(string),
 		secretAccessKey: config["secret_access_key"].(string),
 		regionName:      config["region_name"].(string),
+		prefix:          config["path_prefix"].(string),
 	}
 	if endpoint, ok := config["endpoint"]; ok {
 		s3.endpoint = endpoint.(string)
@@ -123,10 +126,10 @@ func (s *s3) Delete(key string) error {
 	return nil
 }
 
-func (s *s3) List(prefix string) ([]string, error) {
+func (s *s3) List() ([]string, error) {
 	params := &awss3.ListObjectsInput{
 		Bucket: aws.String(s.bucket),
-		Prefix: aws.String(prefix),
+		Prefix: aws.String(s.prefix),
 	}
 
 	objects := []*awss3.Object{}
@@ -136,12 +139,13 @@ func (s *s3) List(prefix string) ([]string, error) {
 			return true
 		})
 	if err != nil {
-		return nil, fmt.Errorf("unable to list bucket '%s' with '%s': %s", s.bucket, prefix, err.Error())
+		return nil, fmt.Errorf("unable to list bucket '%s' with '%s': %s", s.bucket, s.prefix, err.Error())
 	}
 
 	results := []string{}
 	for _, obj := range objects {
-		results = append(results, *obj.Key)
+		key := path.Base(*obj.Key)
+		results = append(results, key)
 	}
 
 	return results, nil

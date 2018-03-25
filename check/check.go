@@ -35,7 +35,7 @@ func (c Checker) Check(startingVersion Version) (Output, error) {
 		}
 	}
 
-	results, err := c.Storage.List("")
+	results, err := c.Storage.List()
 	if err != nil {
 		return nil, err
 	}
