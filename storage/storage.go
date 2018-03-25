@@ -22,7 +22,7 @@ type Storage interface {
 	List() ([]string, error)
 }
 
-func CreateFromJSON(configType string, config map[string]interface{}) (Storage, error) {
-	return NewS3(config), nil
+func New(configType string, config map[string]interface{}) (Storage, error) {
 	// TODO: add validate()
+	return NewS3(config), nil
 }

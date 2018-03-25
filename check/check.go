@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/ljfranklin/test-runner-resource/models"
 	"github.com/ljfranklin/test-runner-resource/storage"
 )
 
@@ -19,15 +20,9 @@ type Checker struct {
 	Storage storage.Storage
 }
 
-type Output []Version
-
-type Version struct {
-	Key string `json:"key"`
-}
-
-func (c Checker) Check(startingVersion Version) (Output, error) {
+func (c Checker) Check(startingVersion models.Version) (models.CheckResponse, error) {
 	var startingTimestamp time.Time
-	if startingVersion != (Version{}) {
+	if startingVersion != (models.Version{}) {
 		var err error
 		startingTimestamp, err = keyToTimestamp(startingVersion.Key)
 		if err != nil {
@@ -41,14 +36,14 @@ func (c Checker) Check(startingVersion Version) (Output, error) {
 	}
 	sort.Sort(byFileNameRegex(results))
 
-	output := Output{}
+	output := models.CheckResponse{}
 	for _, result := range results {
 		resultTimestamp, err := keyToTimestamp(result)
 		if err != nil {
 			return nil, err
 		}
 		if !startingTimestamp.After(resultTimestamp) {
-			output = append(output, Version{
+			output = append(output, models.Version{
 				Key: result,
 			})
 		}

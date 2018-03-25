@@ -122,7 +122,7 @@ func testGet(t *testing.T, c testConfig) {
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
 	defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, s3RemotePath)
 
-	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
+	s3, err := storage.New("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func testDelete(t *testing.T, c testConfig) {
 	s3RemotePath := filepath.Join(c.BucketPath, helpers.RandomString("s3-get-test"))
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
 
-	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
+	s3, err := storage.New("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestS3CompatiblePut(t *testing.T) {
 func testPut(t *testing.T, c testConfig) {
 	awsVerifier := helpers.NewAWSVerifier(c.AccessKeyID, c.SecretAccessKey, c.Region, c.Endpoint)
 
-	s3, err := storage.CreateFromJSON("s3", buildS3Config(c))
+	s3, err := storage.New("s3", buildS3Config(c))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +318,7 @@ func testList(t *testing.T, c testConfig) {
 			config := buildS3Config(c)
 			config["path_prefix"] = nestedBucketPath
 
-			s3, err := storage.CreateFromJSON("s3", config)
+			s3, err := storage.New("s3", config)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -348,7 +348,7 @@ func testList(t *testing.T, c testConfig) {
 			config := buildS3Config(c)
 			config["path_prefix"] = "path-that-does-not-exist"
 
-			s3, err := storage.CreateFromJSON("s3", config)
+			s3, err := storage.New("s3", config)
 			if err != nil {
 				t.Fatal(err)
 			}

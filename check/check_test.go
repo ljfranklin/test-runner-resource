@@ -1,12 +1,12 @@
 package check_test
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
 	"github.com/ljfranklin/test-runner-resource/check"
+	"github.com/ljfranklin/test-runner-resource/models"
 	"github.com/ljfranklin/test-runner-resource/storage/storagefakes"
 	"github.com/ljfranklin/test-runner-resource/test/helpers"
 )
@@ -23,20 +23,22 @@ func TestCheckWithNoInputVersion(t *testing.T) {
 		Storage: fakeStorage,
 	}
 
-	versions, err := checker.Check(check.Version{})
+	versions, err := checker.Check(models.Version{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resultsJSON, err := json.Marshal(versions)
-	if err != nil {
-		t.Fatal(err)
-	}
-	helpers.AssertJSONEquals(t, string(resultsJSON), `[
-	  {"key": "test-results-2018-01-01T15:04:05Z.xml"},
-	  {"key": "test-results-2018-01-02T15:04:05Z.xml"},
-	  {"key": "test-results-2018-01-03T15:04:05Z.xml"}
-	]`)
+	helpers.AssertEquals(t, versions, models.CheckResponse{
+		{
+			Key: "test-results-2018-01-01T15:04:05Z.xml",
+		},
+		{
+			Key: "test-results-2018-01-02T15:04:05Z.xml",
+		},
+		{
+			Key: "test-results-2018-01-03T15:04:05Z.xml",
+		},
+	})
 }
 
 func TestCheckWithInputVersion(t *testing.T) {
@@ -51,49 +53,21 @@ func TestCheckWithInputVersion(t *testing.T) {
 		Storage: fakeStorage,
 	}
 
-	versions, err := checker.Check(check.Version{
+	versions, err := checker.Check(models.Version{
 		Key: "test-results-2018-01-02T15:04:05Z.xml",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	resultsJSON, err := json.Marshal(versions)
-	if err != nil {
-		t.Fatal(err)
-	}
-	helpers.AssertJSONEquals(t, string(resultsJSON), `[
-	  {"key": "test-results-2018-01-02T15:04:05Z.xml"},
-	  {"key": "test-results-2018-01-03T15:04:05Z.xml"}
-	]`)
-}
-
-func TestCheckWithPathPrefix(t *testing.T) {
-	fakeStorage := &storagefakes.FakeStorage{}
-	fakeStorage.ListReturns([]string{
-		"some-path/test-results-2018-01-02T15:04:05Z.xml",
-		"some-path/test-results-2018-01-01T15:04:05Z.xml",
-		"some-path/test-results-2018-01-03T15:04:05Z.xml",
-	}, nil)
-
-	checker := check.Checker{
-		Storage: fakeStorage,
-	}
-
-	versions, err := checker.Check(check.Version{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	resultsJSON, err := json.Marshal(versions)
-	if err != nil {
-		t.Fatal(err)
-	}
-	helpers.AssertJSONEquals(t, string(resultsJSON), `[
-	  {"key": "some-path/test-results-2018-01-01T15:04:05Z.xml"},
-	  {"key": "some-path/test-results-2018-01-02T15:04:05Z.xml"},
-	  {"key": "some-path/test-results-2018-01-03T15:04:05Z.xml"}
-	]`)
+	helpers.AssertEquals(t, versions, models.CheckResponse{
+		{
+			Key: "test-results-2018-01-02T15:04:05Z.xml",
+		},
+		{
+			Key: "test-results-2018-01-03T15:04:05Z.xml",
+		},
+	})
 }
 
 func TestCheckErrorWithInvalidStartingVersion(t *testing.T) {
@@ -104,7 +78,7 @@ func TestCheckErrorWithInvalidStartingVersion(t *testing.T) {
 		Storage: fakeStorage,
 	}
 
-	_, err := checker.Check(check.Version{
+	_, err := checker.Check(models.Version{
 		Key: "test-results-invalid-time.xml",
 	})
 	if err == nil {
@@ -123,7 +97,7 @@ func TestCheckErrorWhenListErrors(t *testing.T) {
 		Storage: fakeStorage,
 	}
 
-	_, err := checker.Check(check.Version{
+	_, err := checker.Check(models.Version{
 		Key: "test-results-2018-01-02T15:04:05Z.xml",
 	})
 	if err == nil {
