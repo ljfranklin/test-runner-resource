@@ -3,9 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
-	"sort"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -25,43 +23,9 @@ type s3 struct {
 	uploader        *s3manager.Uploader
 }
 
-type s3Version struct {
-	LastModified string `yaml:"last_modified"`
-}
-
-func (v s3Version) Compare(other interface{}) int {
-	var b s3Version
-	switch t := other.(type) {
-	case s3Version:
-		b = t
-	case *s3Version:
-		b = *t
-	default:
-		panic("unexpected type for s3Version")
-	}
-	aTime, err := time.Parse(timeFormat, v.LastModified)
-	if err != nil {
-		panic(err)
-	}
-	bTime, err := time.Parse(timeFormat, b.LastModified)
-	if err != nil {
-		panic(err)
-	}
-
-	if aTime.Before(bTime) {
-		return -1
-	}
-	if aTime.After(bTime) {
-		return 1
-	}
-	return 0
-}
-
 const (
 	maxRetries    = 10
 	defaultRegion = "us-east-1"
-	// e.g. "2006-01-02T15:04:05Z"
-	timeFormat = time.RFC3339
 )
 
 func NewS3(config map[string]interface{}) Storage {
@@ -110,7 +74,7 @@ func NewS3(config map[string]interface{}) Storage {
 	return s3
 }
 
-func (s *s3) Get(key string, destination io.Writer) (Result, error) {
+func (s *s3) Get(key string, destination io.Writer) error {
 	params := &awss3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -118,24 +82,19 @@ func (s *s3) Get(key string, destination io.Writer) (Result, error) {
 
 	resp, err := s.client.GetObject(params)
 	if err != nil {
-		return Result{}, fmt.Errorf("unable to fetch '%s': %s", key, err.Error())
+		return fmt.Errorf("unable to fetch '%s': %s", key, err.Error())
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(destination, resp.Body)
 	if err != nil {
-		return Result{}, fmt.Errorf("failed to copy download to local file: %s", err)
+		return fmt.Errorf("failed to copy download to local file: %s", err)
 	}
 
-	return Result{
-		Key: key,
-		Version: s3Version{
-			LastModified: resp.LastModified.Format(timeFormat),
-		},
-	}, nil
+	return nil
 }
 
-func (s *s3) Put(key string, source io.Reader) (Result, error) {
+func (s *s3) Put(key string, source io.Reader) error {
 	params := &s3manager.UploadInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -144,24 +103,10 @@ func (s *s3) Put(key string, source io.Reader) (Result, error) {
 
 	_, err := s.uploader.Upload(params)
 	if err != nil {
-		return Result{}, fmt.Errorf("unable to upload '%s': %s", key, err.Error())
+		return fmt.Errorf("unable to upload '%s': %s", key, err.Error())
 	}
 
-	headParams := &awss3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	}
-	resp, err := s.client.HeadObject(headParams)
-	if err != nil {
-		return Result{}, fmt.Errorf("unable to check '%s': %s", key, s.bucket)
-	}
-
-	return Result{
-		Key: key,
-		Version: s3Version{
-			LastModified: resp.LastModified.Format(timeFormat),
-		},
-	}, nil
+	return nil
 }
 
 func (s *s3) Delete(key string) error {
@@ -178,7 +123,7 @@ func (s *s3) Delete(key string) error {
 	return nil
 }
 
-func (s *s3) List(prefix string) (Results, error) {
+func (s *s3) List(prefix string) ([]string, error) {
 	params := &awss3.ListObjectsInput{
 		Bucket: aws.String(s.bucket),
 		Prefix: aws.String(prefix),
@@ -194,17 +139,10 @@ func (s *s3) List(prefix string) (Results, error) {
 		return nil, fmt.Errorf("unable to list bucket '%s' with '%s': %s", s.bucket, prefix, err.Error())
 	}
 
-	results := Results{}
+	results := []string{}
 	for _, obj := range objects {
-		results = append(results, Result{
-			Key: *obj.Key,
-			Version: s3Version{
-				LastModified: obj.LastModified.Format(timeFormat),
-			},
-		})
+		results = append(results, *obj.Key)
 	}
-
-	sort.Sort(results)
 
 	return results, nil
 }

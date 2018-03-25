@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+	<testsuite tests="30" failures="0" time="9.837" name="github.com/ljfranklin/test-runner-resource/storage" timestamp="2018-03-15T14:22:46+07:00">
+		<properties>
+			<property name="go.version" value="go1.9.2"></property>
+		</properties>
+		<testcase classname="storage" name="TestS3Get" time="2.560"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleGet" time="1.860"></testcase>
+		<testcase classname="storage" name="TestS3Delete" time="1.640"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleDelete" time="2.030"></testcase>
+		<testcase classname="storage" name="TestS3Put" time="1.640"></testcase>
+		<testcase classname="storage" name="TestS3CompatiblePut" time="2.480"></testcase>
+		<testcase classname="storage" name="TestS3List" time="7.630"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleList" time="9.830"></testcase>
+		<testcase classname="storage" name="TestS3CompatiblePut/Delete" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3CompatiblePut/Delete/uploads_the_file" time="1.370"></testcase>
+		<testcase classname="storage" name="TestS3CompatiblePut/Delete/returns_error_on_invalid_input_file" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3Get/Get" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3Get/Get/downloads_the_file" time="0.180"></testcase>
+		<testcase classname="storage" name="TestS3Get/Get/errors_on_non-existent_key" time="0.170"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleDelete/Delete" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleDelete/Delete/deletes_the_file" time="0.720"></testcase>
+		<testcase classname="storage" name="TestS3Put/Delete" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3Put/Delete/uploads_the_file" time="0.420"></testcase>
+		<testcase classname="storage" name="TestS3Put/Delete/returns_error_on_invalid_input_file" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3Delete/Delete" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3Delete/Delete/deletes_the_file" time="0.280"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleGet/Get" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleGet/Get/downloads_the_file" time="0.390"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleGet/Get/errors_on_non-existent_key" time="0.240"></testcase>
+		<testcase classname="storage" name="TestS3List/List" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3List/List/returns_all_files_with_increasing_versions" time="0.400"></testcase>
+		<testcase classname="storage" name="TestS3List/List/returns_empty_list_if_prefix_is_empty" time="0.120"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleList/List" time="0.000"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleList/List/returns_all_files_with_increasing_versions" time="0.870"></testcase>
+		<testcase classname="storage" name="TestS3CompatibleList/List/returns_empty_list_if_prefix_is_empty" time="0.260"></testcase>
+	</testsuite>
+</testsuites>

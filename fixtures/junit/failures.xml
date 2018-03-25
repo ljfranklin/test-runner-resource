@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+	<testsuite tests="8" failures="8" time="0.003" name="github.com/ljfranklin/test-runner-resource/storage" timestamp="2018-03-15T14:22:46+07:00">
+		<properties>
+			<property name="go.version" value="go1.9.2"></property>
+		</properties>
+		<testcase classname="storage" name="TestS3Get" time="0.000">
+			<failure message="Failed" type="">s3_test.go:102: AWS_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3CompatibleGet" time="0.000">
+			<failure message="Failed" type="">s3_test.go:110: S3_COMPATIBLE_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3Delete" time="0.000">
+			<failure message="Failed" type="">s3_test.go:178: AWS_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3CompatibleDelete" time="0.000">
+			<failure message="Failed" type="">s3_test.go:186: S3_COMPATIBLE_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3Put" time="0.000">
+			<failure message="Failed" type="">s3_test.go:227: AWS_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3CompatiblePut" time="0.000">
+			<failure message="Failed" type="">s3_test.go:235: S3_COMPATIBLE_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3List" time="0.000">
+			<failure message="Failed" type="">s3_test.go:295: AWS_ACCESS_KEY must be set</failure>
+		</testcase>
+		<testcase classname="storage" name="TestS3CompatibleList" time="0.000">
+			<failure message="Failed" type="">s3_test.go:303: S3_COMPATIBLE_ACCESS_KEY must be set</failure>
+		</testcase>
+	</testsuite>
+</testsuites>

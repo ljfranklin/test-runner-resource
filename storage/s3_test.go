@@ -3,17 +3,15 @@ package storage_test
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/ljfranklin/test-runner-resource/storage"
 	"github.com/ljfranklin/test-runner-resource/test/helpers"
-	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -136,17 +134,11 @@ func testGet(t *testing.T, c testConfig) {
 			awsVerifier.ExpectS3ObjectToExist(t, c.Bucket, s3RemotePath)
 
 			fileContents := bytes.Buffer{}
-			result, err := s3.Get(s3RemotePath, &fileContents)
+			err := s3.Get(s3RemotePath, &fileContents)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if result.Key != filepath.Join(s3RemotePath) {
-				t.Fatalf("expected '%s' to equal '%s'", result.Key, s3RemotePath)
-			}
-			if result.Version == nil {
-				t.Fatal("expected a non-nil result.Version")
-			}
 			expectedFileContents := []byte("some-file-contents\n")
 			if !bytes.Equal(fileContents.Bytes(), expectedFileContents) {
 				t.Fatalf("expected '%s' to equal '%s'", fileContents.Bytes(), expectedFileContents)
@@ -159,7 +151,7 @@ func testGet(t *testing.T, c testConfig) {
 			awsVerifier.ExpectS3ObjectToExist(t, c.Bucket, s3RemotePath)
 
 			fileContents := bytes.Buffer{}
-			_, err := s3.Get("key-that-does-not-exist", &fileContents)
+			err := s3.Get("key-that-does-not-exist", &fileContents)
 			if err == nil {
 				t.Fatal("expected error to occur on missing file")
 			}
@@ -258,18 +250,11 @@ func testPut(t *testing.T, c testConfig) {
 			}
 			defer fixture.Close()
 
-			result, err := s3.Put(s3RemotePath, fixture)
+			err = s3.Put(s3RemotePath, fixture)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, s3RemotePath)
-
-			if result.Key != filepath.Join(s3RemotePath) {
-				t.Fatalf("expected '%s' to equal '%s'", result.Key, s3RemotePath)
-			}
-			if result.Version == nil {
-				t.Fatal("expected a non-nil result.Version")
-			}
 
 			awsVerifier.ExpectS3ObjectToExist(t, c.Bucket, s3RemotePath)
 		})
@@ -278,7 +263,7 @@ func testPut(t *testing.T, c testConfig) {
 			t.Parallel()
 
 			badReader := errReader{}
-			_, err := s3.Put("some-upload-path", badReader)
+			err := s3.Put("some-upload-path", badReader)
 			if err == nil {
 				t.Fatal("expected an error on `nil` file param")
 			}
@@ -334,7 +319,7 @@ func testList(t *testing.T, c testConfig) {
 	}
 
 	t.Run("List", func(t *testing.T) {
-		t.Run("returns all files with increasing versions", func(t *testing.T) {
+		t.Run("returns all files in bucket path", func(t *testing.T) {
 			t.Parallel()
 
 			results, err := s3.List(nestedBucketPath)
@@ -346,18 +331,13 @@ func testList(t *testing.T, c testConfig) {
 				t.Fatalf("expected '%#v' to have length 3", results)
 			}
 
-			for i := range uploadedFixtures {
-				if results[i].Key != uploadedFixtures[i] {
-					t.Fatalf("expected '%s' to equal '%s'", results[i].Key, uploadedFixtures[i])
-				}
-				versionYAML, err := yaml.Marshal(results[i].Version)
-				if err != nil {
-					t.Fatal(err)
-				}
+			sort.Strings(results)
+			sort.Strings(uploadedFixtures)
 
-				assertYAMLEquals(t, string(versionYAML), fmt.Sprintf(`---
-last_modified: "%s"
-`, awsVerifier.GetS3ObjectLastModified(t, c.Bucket, uploadedFixtures[i], timeFormat)))
+			for i := range uploadedFixtures {
+				if results[i] != uploadedFixtures[i] {
+					t.Fatalf("expected '%s' to equal '%s'", results[i], uploadedFixtures[i])
+				}
 			}
 		})
 
@@ -400,24 +380,4 @@ type errReader struct{}
 
 func (e errReader) Read(p []byte) (int, error) {
 	return 0, errors.New("some-read-error")
-}
-
-func assertYAMLEquals(t *testing.T, actual, expected string) {
-	t.Helper()
-
-	var actualStruct interface{}
-	err := yaml.Unmarshal([]byte(actual), &actualStruct)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var expectedStruct interface{}
-	err = yaml.Unmarshal([]byte(expected), &expectedStruct)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(actualStruct, expectedStruct) {
-		t.Fatalf("expected '%s' to deep equal '%s'", actual, expected)
-	}
 }
