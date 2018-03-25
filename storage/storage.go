@@ -24,5 +24,10 @@ type Storage interface {
 
 func New(configType string, config map[string]interface{}) (Storage, error) {
 	// TODO: add validate()
-	return NewS3(config), nil
+	switch configType {
+	case "s3":
+		return NewS3(config), nil
+	default:
+		return nil, fmt.Errorf("unrecognized storage_type '%s'; set storage_type to one of the following: 's3'", configType)
+	}
 }

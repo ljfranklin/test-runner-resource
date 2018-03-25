@@ -19,7 +19,7 @@ func main() {
 
 	storage, err := storage.New(request.Source.StorageType, request.Source.StorageConfig)
 	if err != nil {
-		panic(err) // TODO
+		log.Fatalf("failed to initialize storage: %s", err)
 	}
 
 	checker := check.Checker{

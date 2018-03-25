@@ -225,6 +225,44 @@ func TestCheckCmdErrorOnInvalidJSON(t *testing.T) {
 	}
 }
 
+func TestCheckCmdErrorOnInvalidStorageType(t *testing.T) {
+	t.Parallel()
+
+	checkRequest := models.CheckRequest{
+		Source: models.Source{
+			StorageType:   "invalid-type",
+			StorageConfig: nil,
+		},
+	}
+
+	checkJSON, err := json.Marshal(checkRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(mainPath)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	go func() {
+		defer stdin.Close()
+		_, err = stdin.Write(checkJSON)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	combinedOutput, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected check to err but it did not: %s", string(combinedOutput))
+	}
+	if !strings.Contains(string(combinedOutput), "invalid-type") {
+		t.Fatalf("expected error to contain 'invalid-type' but it did not: %s", string(combinedOutput))
+	}
+}
+
 func TestCheckCmdErrorOnInvalidCreds(t *testing.T) {
 	t.Parallel()
 
