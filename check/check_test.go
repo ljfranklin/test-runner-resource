@@ -68,6 +68,34 @@ func TestCheckWithInputVersion(t *testing.T) {
 	]`)
 }
 
+func TestCheckWithPathPrefix(t *testing.T) {
+	fakeStorage := &storagefakes.FakeStorage{}
+	fakeStorage.ListReturns([]string{
+		"some-path/test-results-2018-01-02T15:04:05Z.xml",
+		"some-path/test-results-2018-01-01T15:04:05Z.xml",
+		"some-path/test-results-2018-01-03T15:04:05Z.xml",
+	}, nil)
+
+	checker := check.Checker{
+		Storage: fakeStorage,
+	}
+
+	versions, err := checker.Check(check.Version{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resultsJSON, err := json.Marshal(versions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	helpers.AssertJSONEquals(t, string(resultsJSON), `[
+	  {"key": "some-path/test-results-2018-01-01T15:04:05Z.xml"},
+	  {"key": "some-path/test-results-2018-01-02T15:04:05Z.xml"},
+	  {"key": "some-path/test-results-2018-01-03T15:04:05Z.xml"}
+	]`)
+}
+
 func TestCheckErrorWithInvalidStartingVersion(t *testing.T) {
 	fakeStorage := &storagefakes.FakeStorage{}
 	fakeStorage.ListReturns([]string{}, nil)

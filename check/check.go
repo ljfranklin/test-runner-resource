@@ -6,20 +6,17 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ljfranklin/test-runner-resource/models"
 	"github.com/ljfranklin/test-runner-resource/storage"
 )
 
-// TODO: handle path prefix
 var (
-	keyRegex = regexp.MustCompile(`^test-results-(.+)\.xml$`)
+	keyRegex = regexp.MustCompile(`/?test-results-(.+)\.xml$`)
 	// e.g. "2006-01-02T15:04:05Z"
 	timeFormat = time.RFC3339
 )
 
 type Checker struct {
 	Storage storage.Storage
-	Source  models.Source
 }
 
 type Output []Version
