@@ -30,6 +30,26 @@ const (
 	defaultRegion = "us-east-1"
 )
 
+func ValidateS3Config(config map[string]interface{}) error {
+	requiredProps := []string{
+		"access_key_id",
+		"secret_access_key",
+		"bucket",
+	}
+
+	missingProps := []string{}
+	for _, required := range requiredProps {
+		if _, ok := config[required]; !ok {
+			missingProps = append(missingProps, required)
+		}
+	}
+
+	if len(missingProps) > 0 {
+		return fmt.Errorf("missing required properties in storage_config: %s", strings.Join(missingProps, ", "))
+	}
+	return nil
+}
+
 func NewS3(config map[string]interface{}) Storage {
 	s3 := &s3{
 		bucket:          config["bucket"].(string),

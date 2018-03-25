@@ -365,6 +365,26 @@ func testList(t *testing.T, c testConfig) {
 	})
 }
 
+func TestErrorOnInvalidConfig(t *testing.T) {
+	t.Parallel()
+
+	_, err := storage.New("s3", map[string]interface{}{})
+	if err == nil {
+		t.Fatal("expected error to occur but it did not")
+	}
+
+	requiredProps := []string{
+		"access_key_id",
+		"secret_access_key",
+		"bucket",
+	}
+	for _, prop := range requiredProps {
+		if !strings.Contains(err.Error(), prop) {
+			t.Fatalf("expected error to contain '%s' but it does not: %s", prop, err)
+		}
+	}
+}
+
 func buildS3Config(c testConfig) map[string]interface{} {
 	s3Config := map[string]interface{}{
 		"access_key_id":     c.AccessKeyID,
