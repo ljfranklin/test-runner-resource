@@ -27,35 +27,45 @@ type Getter struct {
 func (g Getter) Get(request models.InRequest) (models.InResponse, error) {
 	startingTimestamp, err := keyToTimestamp(request.Version.Key)
 	if err != nil {
-		panic(err) // TODO
+		return models.InResponse{}, err
 	}
 
 	results, err := g.Storage.List()
 	if err != nil {
-		panic(err) // TODO
+		return models.InResponse{}, err
 	}
-	sort.Sort(byFileNameRegex(results))
+	sort.Sort(sort.Reverse(byFileNameRegex(results)))
 
-	// TODO: limit result set
 	keysToFetch := []string{}
 	for _, result := range results {
 		resultTimestamp, err := keyToTimestamp(result)
 		if err != nil {
-			panic(err) // TODO
+			return models.InResponse{}, err
 		}
 		if !resultTimestamp.After(startingTimestamp) {
 			keysToFetch = append(keysToFetch, result)
 		}
 	}
 
+	highestLimit := 0
+	for _, summary := range request.Params.Summaries {
+		if summary.Limit > highestLimit {
+			highestLimit = summary.Limit
+		}
+	}
+	if highestLimit > 0 && len(keysToFetch) > highestLimit {
+		keysToFetch = keysToFetch[:highestLimit]
+	}
+
+	// TODO: parallelize
 	for _, key := range keysToFetch {
 		f, err := os.Create(filepath.Join(request.OutputDir, key))
 		if err != nil {
-			panic(err) // TODO
+			return models.InResponse{}, err
 		}
 
 		if err = g.Storage.Get(key, f); err != nil {
-			panic(err) // TODO
+			return models.InResponse{}, err
 		}
 
 		if err = f.Close(); err != nil {
@@ -65,7 +75,7 @@ func (g Getter) Get(request models.InRequest) (models.InResponse, error) {
 
 	for _, summary := range request.Params.Summaries {
 		if err = g.JunitViewer.PrintSummary(summary); err != nil {
-			panic(err) // TODO
+			return models.InResponse{}, err
 		}
 	}
 
