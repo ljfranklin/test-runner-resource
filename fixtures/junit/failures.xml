@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-	<testsuite tests="8" failures="8" time="0.003" name="github.com/ljfranklin/test-runner-resource/storage" timestamp="2018-03-15T14:22:46+07:00">
+	<testsuite tests="8" failures="8" time="0.003" name="github.com/ljfranklin/test-runner-resource/storage" timestamp="2018-03-14T14:22:46+07:00">
 		<properties>
 			<property name="go.version" value="go1.9.2"></property>
 		</properties>
