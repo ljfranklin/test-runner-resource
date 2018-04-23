@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -98,6 +99,7 @@ func NewS3(config map[string]interface{}) Storage {
 }
 
 func (s *s3) Get(key string, destination io.Writer) error {
+	key = filepath.Join(s.prefix, key)
 	params := &awss3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -118,6 +120,7 @@ func (s *s3) Get(key string, destination io.Writer) error {
 }
 
 func (s *s3) Put(key string, source io.Reader) error {
+	key = filepath.Join(s.prefix, key)
 	params := &s3manager.UploadInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -133,6 +136,7 @@ func (s *s3) Put(key string, source io.Reader) error {
 }
 
 func (s *s3) Delete(key string) error {
+	key = filepath.Join(s.prefix, key)
 	params := &awss3.DeleteObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),

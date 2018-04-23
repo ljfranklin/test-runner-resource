@@ -118,7 +118,8 @@ func testGet(t *testing.T, c testConfig) {
 		t.Fatal(err)
 	}
 	defer fixture.Close()
-	s3RemotePath := filepath.Join(c.BucketPath, helpers.RandomString("s3-get-test"))
+	s3Key := helpers.RandomString("s3-get-test")
+	s3RemotePath := filepath.Join(c.BucketPath, s3Key)
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
 	defer awsVerifier.DeleteObjectFromS3(t, c.Bucket, s3RemotePath)
 
@@ -134,7 +135,7 @@ func testGet(t *testing.T, c testConfig) {
 			awsVerifier.ExpectS3ObjectToExist(t, c.Bucket, s3RemotePath)
 
 			fileContents := bytes.Buffer{}
-			err := s3.Get(s3RemotePath, &fileContents)
+			err := s3.Get(s3Key, &fileContents)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -189,7 +190,8 @@ func testDelete(t *testing.T, c testConfig) {
 	}
 	defer fixture.Close()
 
-	s3RemotePath := filepath.Join(c.BucketPath, helpers.RandomString("s3-get-test"))
+	s3Key := helpers.RandomString("s3-get-test")
+	s3RemotePath := filepath.Join(c.BucketPath, s3Key)
 	awsVerifier.UploadObjectToS3(t, c.Bucket, s3RemotePath, fixture)
 
 	s3, err := storage.New("s3", buildS3Config(c))
@@ -203,7 +205,7 @@ func testDelete(t *testing.T, c testConfig) {
 
 			awsVerifier.ExpectS3ObjectToExist(t, c.Bucket, s3RemotePath)
 
-			err := s3.Delete(s3RemotePath)
+			err := s3.Delete(s3Key)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -241,7 +243,8 @@ func testPut(t *testing.T, c testConfig) {
 		t.Run("uploads the file", func(t *testing.T) {
 			t.Parallel()
 
-			s3RemotePath := filepath.Join(c.BucketPath, helpers.RandomString("s3-upload-test"))
+			s3Key := helpers.RandomString("s3-upload-test")
+			s3RemotePath := filepath.Join(c.BucketPath, s3Key)
 			awsVerifier.ExpectS3ObjectToNotExist(t, c.Bucket, s3RemotePath)
 
 			fixture, err := os.Open(fixturePath("some-file"))
@@ -250,7 +253,7 @@ func testPut(t *testing.T, c testConfig) {
 			}
 			defer fixture.Close()
 
-			err = s3.Put(s3RemotePath, fixture)
+			err = s3.Put(s3Key, fixture)
 			if err != nil {
 				t.Fatal(err)
 			}

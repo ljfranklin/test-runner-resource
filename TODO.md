@@ -13,6 +13,7 @@
     - record user-specified metadata into `testsuites` attributes, e.g. azure
   - upload summary file to storage
     - ensure that file won't clash on parallel runs
+  - print `get` output as on a failed test suite `get` won't run
 - get
   - download one or more summary files from storage
   - generate different summaries as specified by pipeline config:
